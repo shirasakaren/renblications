@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { getPublicConfig } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const { site, appearance } = await getPublicConfig();
   return {

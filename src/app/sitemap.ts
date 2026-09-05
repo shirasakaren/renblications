@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { COLLECTIONS, contentPath } from "@/lib/collections";
 import { getPublicConfig, listContent } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 async function requestOrigin(configured: string): Promise<string | null> {
   if (configured) return new URL(configured).origin;
   if (process.env.SITE_URL) return new URL(process.env.SITE_URL).origin;
