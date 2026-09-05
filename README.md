@@ -72,7 +72,7 @@ The format is intentionally parsed into a small allowlist rather than evaluating
 
 ## Railway
 
-The checked-in [`railway.toml`](./railway.toml) configures Railpack, the migration command, production start command, health check, and restart policy. A complete deployment uses:
+The checked-in [`.railway/railway.ts`](./.railway/railway.ts) defines the Docker build, migration command, production start command, health check, PostgreSQL database, and media bucket through Railway Infrastructure as Code. A complete deployment uses:
 
 1. One app service from this repository
 2. One PostgreSQL service referenced by `DATABASE_URL`

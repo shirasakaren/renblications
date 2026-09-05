@@ -10,5 +10,6 @@ coverage
 data/local-store.json
 public/uploads/*
 !public/uploads/.gitkeep
-.railway/
+.railway/*
 !.railway/README.md
+!.railway/railway.ts
