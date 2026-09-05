@@ -509,6 +509,7 @@ router.post("/admin/settings/passphrase", async (request, response, next) => {
 });
 
 router.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
+  void _next;
   if (error instanceof multer.MulterError) {
     response.status(error.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: error.message });
     return;
