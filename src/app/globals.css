@@ -1209,9 +1209,7 @@ body[data-motion="reduced"] *::after {
 .onboarding-page {
   min-height: 100dvh;
   padding: 24px;
-  background:
-    radial-gradient(circle at 12% 14%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 34%),
-    var(--bg);
+  background: var(--bg);
 }
 
 .onboarding-shell {

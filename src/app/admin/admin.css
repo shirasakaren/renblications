@@ -15,11 +15,7 @@
   min-height: 100dvh;
   place-items: center;
   padding: 24px;
-  background:
-    linear-gradient(color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px),
-    var(--bg);
-  background-size: 64px 64px;
+  background: var(--bg);
 }
 
 .admin-login-card {
