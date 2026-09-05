@@ -1,0 +1,13 @@
+node_modules
+.next
+.env
+.env.*
+!.env.example
+coverage
+*.log
+.DS_Store
+data/local-store.json
+public/uploads/*
+!public/uploads/.gitkeep
+.railway/
+!.railway/README.md
