@@ -44,6 +44,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       className={`${sans.variable} ${mono.variable} ${initialMode === "dark" ? "dark" : ""}`}
       data-theme={theme.id}
       data-mode={appearance.mode}
+      data-scroll-behavior="smooth"
       style={themeStyle(theme.id)}
       suppressHydrationWarning
     >
