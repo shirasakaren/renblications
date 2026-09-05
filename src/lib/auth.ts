@@ -1,9 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ADMIN_COOKIE } from "./constants";
 import { hasSession } from "./db";
 import { hashToken } from "./security";
-
-export const ADMIN_COOKIE = "ren_publications_admin";
 
 export async function isAdminRequest(): Promise<boolean> {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;

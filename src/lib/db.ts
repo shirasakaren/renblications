@@ -104,12 +104,11 @@ function getPool(): Pool {
 }
 
 async function loadLocal(): Promise<LocalState> {
-  if (localCache) return localCache;
   try {
     const raw = await readFile(localPath, "utf8");
     localCache = JSON.parse(raw) as LocalState;
   } catch {
-    localCache = freshLocalState();
+    localCache ??= freshLocalState();
   }
   return localCache;
 }

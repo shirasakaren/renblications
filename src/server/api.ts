@@ -31,9 +31,7 @@ import {
   DEFAULT_SITE,
 } from "../lib/defaults";
 import { createStarterContent } from "../lib/seed";
-import {
-  ADMIN_COOKIE,
-} from "../lib/auth";
+import { ADMIN_COOKIE } from "../lib/constants";
 import {
   anonymizeVisitor,
   createSessionToken,
