@@ -13,3 +13,4 @@ public/uploads/*
 .railway/*
 !.railway/README.md
 !.railway/railway.ts
+!.railway/TEMPLATE.md
