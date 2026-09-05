@@ -27,17 +27,20 @@ function applyTheme(id: string, mode: ThemeMode): "light" | "dark" {
   const palette = theme[resolved];
   const root = document.documentElement;
   root.dataset.theme = theme.id;
+  root.dataset.mode = mode;
   root.classList.toggle("dark", resolved === "dark");
-  root.style.colorScheme = resolved;
-  root.style.setProperty("--bg", palette.bg);
-  root.style.setProperty("--surface", palette.surface);
-  root.style.setProperty("--surface-muted", palette.surfaceMuted);
-  root.style.setProperty("--ink", palette.ink);
-  root.style.setProperty("--ink-muted", palette.inkMuted);
-  root.style.setProperty("--line", palette.line);
-  root.style.setProperty("--accent", palette.accent);
-  root.style.setProperty("--accent-strong", palette.accentStrong);
-  root.style.setProperty("--accent-ink", palette.accentInk);
+  root.style.colorScheme = mode === "system" ? "light dark" : resolved;
+  for (const [variant, values] of [["light", theme.light], ["dark", theme.dark]] as const) {
+    root.style.setProperty(`--theme-${variant}-bg`, values.bg);
+    root.style.setProperty(`--theme-${variant}-surface`, values.surface);
+    root.style.setProperty(`--theme-${variant}-surface-muted`, values.surfaceMuted);
+    root.style.setProperty(`--theme-${variant}-ink`, values.ink);
+    root.style.setProperty(`--theme-${variant}-ink-muted`, values.inkMuted);
+    root.style.setProperty(`--theme-${variant}-line`, values.line);
+    root.style.setProperty(`--theme-${variant}-accent`, values.accent);
+    root.style.setProperty(`--theme-${variant}-accent-strong`, values.accentStrong);
+    root.style.setProperty(`--theme-${variant}-accent-ink`, values.accentInk);
+  }
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", palette.bg);
   return resolved;
 }

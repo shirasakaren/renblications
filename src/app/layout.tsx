@@ -43,7 +43,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       lang="en"
       className={`${sans.variable} ${mono.variable} ${initialMode === "dark" ? "dark" : ""}`}
       data-theme={theme.id}
-      style={themeStyle(theme.id, initialMode)}
+      data-mode={appearance.mode}
+      style={themeStyle(theme.id)}
       suppressHydrationWarning
     >
       <head>

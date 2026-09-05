@@ -255,17 +255,26 @@ export function getTheme(id?: string | null): ThemeDefinition {
   return THEMES.find((theme) => theme.id === id) ?? THEMES[0];
 }
 
-export function themeStyle(id: string, mode: "light" | "dark"): CSSProperties {
-  const palette = getTheme(id)[mode];
+export function themeStyle(id: string): CSSProperties {
+  const theme = getTheme(id);
   return {
-    "--bg": palette.bg,
-    "--surface": palette.surface,
-    "--surface-muted": palette.surfaceMuted,
-    "--ink": palette.ink,
-    "--ink-muted": palette.inkMuted,
-    "--line": palette.line,
-    "--accent": palette.accent,
-    "--accent-strong": palette.accentStrong,
-    "--accent-ink": palette.accentInk,
+    "--theme-light-bg": theme.light.bg,
+    "--theme-light-surface": theme.light.surface,
+    "--theme-light-surface-muted": theme.light.surfaceMuted,
+    "--theme-light-ink": theme.light.ink,
+    "--theme-light-ink-muted": theme.light.inkMuted,
+    "--theme-light-line": theme.light.line,
+    "--theme-light-accent": theme.light.accent,
+    "--theme-light-accent-strong": theme.light.accentStrong,
+    "--theme-light-accent-ink": theme.light.accentInk,
+    "--theme-dark-bg": theme.dark.bg,
+    "--theme-dark-surface": theme.dark.surface,
+    "--theme-dark-surface-muted": theme.dark.surfaceMuted,
+    "--theme-dark-ink": theme.dark.ink,
+    "--theme-dark-ink-muted": theme.dark.inkMuted,
+    "--theme-dark-line": theme.dark.line,
+    "--theme-dark-accent": theme.dark.accent,
+    "--theme-dark-accent-strong": theme.dark.accentStrong,
+    "--theme-dark-accent-ink": theme.dark.accentInk,
   } as CSSProperties;
 }
