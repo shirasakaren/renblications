@@ -79,6 +79,7 @@ let localWriteQueue = Promise.resolve();
 let pool: Pool | null = null;
 let schemaPromise: Promise<void> | null = null;
 let lastAnalyticsPruneAt = 0;
+let lastScheduleCheckAt = 0;
 
 function freshLocalState(): LocalState {
   return {
@@ -467,6 +468,31 @@ function normalizeDraft(draft: ContentDraft): ContentItem {
   };
 }
 
+async function publishDueContent(): Promise<void> {
+  const now = Date.now();
+  if (now - lastScheduleCheckAt < 30_000) return;
+  lastScheduleCheckAt = now;
+  if (!usesPostgres()) {
+    const state = await loadLocal();
+    const hasDueContent = state.content.some(
+      (item) => item.status === "scheduled" && item.scheduledAt && Date.parse(item.scheduledAt) <= now,
+    );
+    if (!hasDueContent) return;
+    await mutateLocal((current) => {
+      current.content = current.content.map((item) => {
+        if (item.status !== "scheduled" || !item.scheduledAt || Date.parse(item.scheduledAt) > now) return item;
+        return { ...item, status: "published", publishedAt: item.publishedAt || item.scheduledAt, updatedAt: new Date(now).toISOString() };
+      });
+    });
+    return;
+  }
+  await getPool().query(
+    `UPDATE publication_content
+     SET status = 'published', published_at = coalesce(published_at, scheduled_at), updated_at = now()
+     WHERE status = 'scheduled' AND scheduled_at <= now()`,
+  );
+}
+
 async function upsertContentPg(client: Pool | PoolClient, item: ContentItem): Promise<void> {
   await client.query(
     `INSERT INTO publication_content (
@@ -559,6 +585,7 @@ export async function listContent(options: {
   limit?: number;
 } = {}): Promise<ContentItem[]> {
   await ensureSchema();
+  await publishDueContent();
   const limit = Math.min(Math.max(options.limit ?? 200, 1), 500);
   if (!usesPostgres()) {
     const state = await loadLocal();
@@ -602,6 +629,7 @@ export async function getContentById(id: string): Promise<ContentItem | null> {
 
 export async function getContentBySlug(slug: string): Promise<ContentItem | null> {
   await ensureSchema();
+  await publishDueContent();
   if (!usesPostgres()) {
     return (await loadLocal()).content.find((item) => item.slug === slug) ?? null;
   }

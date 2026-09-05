@@ -63,6 +63,10 @@ export const contentSchema = z.object({
     .default({ title: "", description: "", canonicalUrl: "" }),
   publishedAt: z.string().datetime().nullable().default(null),
   scheduledAt: z.string().datetime().nullable().default(null),
+}).superRefine((value, context) => {
+  if (value.status === "scheduled" && !value.scheduledAt) {
+    context.addIssue({ code: "custom", path: ["scheduledAt"], message: "Choose a publication date for scheduled content." });
+  }
 });
 
 export const siteSettingsSchema = z.object({

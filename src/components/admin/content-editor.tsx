@@ -70,6 +70,12 @@ function mediaSnippet(item: MediaItem): string {
   return `\n<Document src="${item.url}" title="${title}" />\n`;
 }
 
+function localDateTime(value: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
+
 export function ContentEditor({ initialItem, initialType, initialMedia }: { initialItem: ContentItem | null; initialType: ContentKind; initialMedia: MediaItem[] }) {
   const [draft, setDraft] = useState<ContentDraft>(() => initialItem ?? blankDraft(initialType));
   const [media, setMedia] = useState(initialMedia);
@@ -83,6 +89,18 @@ export function ContentEditor({ initialItem, initialType, initialMedia }: { init
   function update<K extends keyof ContentDraft>(key: K, value: ContentDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
     setMessage("Unsaved changes");
+  }
+
+  function updateSeo(key: keyof ContentDraft["seo"], value: string) {
+    setDraft((current) => ({ ...current, seo: { ...current.seo, [key]: value } }));
+    setMessage("Unsaved changes");
+  }
+
+  function updateStatus(status: ContentDraft["status"]) {
+    update("status", status);
+    if (status === "scheduled" && !draft.scheduledAt) {
+      update("scheduledAt", new Date(Date.now() + 3_600_000).toISOString());
+    }
   }
 
   function insert(before: string, after = "", placeholder = "text") {
@@ -179,7 +197,7 @@ export function ContentEditor({ initialItem, initialType, initialMedia }: { init
       <div className="editor-header">
         <Link className="admin-icon-control" href="/admin/content" aria-label="Back to content"><ArrowLeft size={17} /></Link>
         <div className="editor-heading"><input aria-label="Content title" value={draft.title} onChange={(event) => { const title = event.target.value; update("title", title); if (!slugTouched) update("slug", toPath(title)); }} placeholder="Untitled publication" /><span>{message}</span></div>
-        <select className="editor-status" value={draft.status} onChange={(event) => update("status", event.target.value as ContentDraft["status"])}><option value="draft">Draft</option><option value="published">Published</option><option value="scheduled">Scheduled</option><option value="archived">Archived</option></select>
+        <select className="editor-status" value={draft.status} onChange={(event) => updateStatus(event.target.value as ContentDraft["status"])}><option value="draft">Draft</option><option value="published">Published</option><option value="scheduled">Scheduled</option><option value="archived">Archived</option></select>
         <button className="button button-primary" type="button" onClick={save} disabled={pending}><Check size={16} /> {pending ? "Working" : "Save"}</button>
       </div>
 
@@ -193,6 +211,24 @@ export function ContentEditor({ initialItem, initialType, initialMedia }: { init
         <label className="field"><span className="field-legend">Document URL</span><input className="input" value={draft.documentUrl} onChange={(event) => update("documentUrl", event.target.value)} placeholder="PDF or document" /></label>
         <label className="admin-switch-row editor-feature-switch"><span><strong>Featured</strong><small>Eligible for the homepage lead.</small></span><input type="checkbox" checked={draft.featured} onChange={(event) => update("featured", event.target.checked)} /></label>
         <label className="field"><span className="field-legend">Feature rank</span><input className="input" type="number" min={0} max={1000} value={draft.featureRank} onChange={(event) => update("featureRank", Number(event.target.value))} /></label>
+      </div>
+
+      <div className="editor-options-grid">
+        <section className="editor-option-panel">
+          <div><span className="editor-option-kicker">Publishing</span><h2>Timing and visibility</h2></div>
+          <div className="settings-fields">
+            {draft.status === "scheduled" ? <label className="field field-wide"><span className="field-legend">Publish at</span><input className="input" type="datetime-local" value={localDateTime(draft.scheduledAt)} onChange={(event) => update("scheduledAt", event.target.value ? new Date(event.target.value).toISOString() : null)} required /><small>Publishing is promoted automatically on the first request after this time.</small></label> : null}
+            <label className="field"><span className="field-legend">Published date</span><input className="input" type="datetime-local" value={localDateTime(draft.publishedAt)} onChange={(event) => update("publishedAt", event.target.value ? new Date(event.target.value).toISOString() : null)} /></label>
+          </div>
+        </section>
+        <section className="editor-option-panel">
+          <div><span className="editor-option-kicker">Discovery</span><h2>Search and sharing</h2></div>
+          <div className="settings-fields">
+            <label className="field"><span className="field-legend">SEO title</span><input className="input" value={draft.seo.title} onChange={(event) => updateSeo("title", event.target.value)} placeholder={draft.title || "Page title"} maxLength={70} /></label>
+            <label className="field"><span className="field-legend">Canonical URL</span><input className="input" type="url" value={draft.seo.canonicalUrl} onChange={(event) => updateSeo("canonicalUrl", event.target.value)} placeholder="Optional external canonical" /></label>
+            <label className="field field-wide"><span className="field-legend">SEO description</span><textarea className="textarea editor-summary" value={draft.seo.description} onChange={(event) => updateSeo("description", event.target.value)} placeholder={draft.excerpt || "Search result summary"} maxLength={180} /></label>
+          </div>
+        </section>
       </div>
 
       <div className="editor-toolbar" aria-label="MDX formatting">
