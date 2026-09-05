@@ -1,4 +1,4 @@
-import { bucket, defineRailway, postgres, preserve, project, ref, service } from "railway/iac";
+import { bucket, defineRailway, github, postgres, preserve, project, ref, service } from "railway/iac";
 
 // Bind this project-level definition to the application service created by the template.
 export const partial = "publications";
@@ -7,6 +7,7 @@ export default defineRailway(() => {
   const database = postgres("Postgres", { region: "asia-southeast1-eqsg3a" });
   const media = bucket("publication-media", { region: "sin" });
   const publications = service("publications", {
+    source: github("shirasakaren/publications", { branch: "main" }),
     build: {
       builder: "DOCKERFILE",
       dockerfilePath: "/Dockerfile",
