@@ -95,6 +95,8 @@ export interface MediaItem {
   mimeType: string;
   size: number;
   alt: string;
+  storageKey: string;
+  provider: "s3" | "local";
   createdAt: string;
 }
 

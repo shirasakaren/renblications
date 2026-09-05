@@ -191,8 +191,13 @@ async function initializeSchema(client: Pool | PoolClient = getPool()): Promise<
       mime_type text NOT NULL,
       size_bytes bigint NOT NULL,
       alt text NOT NULL DEFAULT '',
+      storage_key text NOT NULL DEFAULT '',
+      provider text NOT NULL DEFAULT 'local',
       created_at timestamptz NOT NULL DEFAULT now()
     );
+
+    ALTER TABLE publication_media ADD COLUMN IF NOT EXISTS storage_key text NOT NULL DEFAULT '';
+    ALTER TABLE publication_media ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'local';
 
     CREATE TABLE IF NOT EXISTS publication_events (
       id uuid PRIMARY KEY,
@@ -614,9 +619,20 @@ export async function saveMedia(item: MediaItem): Promise<MediaItem> {
     });
   }
   await getPool().query(
-    `INSERT INTO publication_media (id, name, url, mime_type, size_bytes, alt, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [item.id, item.name, item.url, item.mimeType, item.size, item.alt, item.createdAt],
+    `INSERT INTO publication_media (
+      id, name, url, mime_type, size_bytes, alt, storage_key, provider, created_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [
+      item.id,
+      item.name,
+      item.url,
+      item.mimeType,
+      item.size,
+      item.alt,
+      item.storageKey,
+      item.provider,
+      item.createdAt,
+    ],
   );
   return item;
 }
@@ -635,8 +651,29 @@ export async function listMedia(limit = 100): Promise<MediaItem[]> {
     mimeType: String(row.mime_type),
     size: Number(row.size_bytes),
     alt: String(row.alt ?? ""),
+    storageKey: String(row.storage_key ?? ""),
+    provider: row.provider === "s3" ? "s3" : "local",
     createdAt: dateString(row.created_at) ?? new Date().toISOString(),
   }));
+}
+
+export async function getMediaById(id: string): Promise<MediaItem | null> {
+  await ensureSchema();
+  if (!usesPostgres()) return (await loadLocal()).media.find((item) => item.id === id) ?? null;
+  const result = await getPool().query("SELECT * FROM publication_media WHERE id = $1", [id]);
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    url: String(row.url),
+    mimeType: String(row.mime_type),
+    size: Number(row.size_bytes),
+    alt: String(row.alt ?? ""),
+    storageKey: String(row.storage_key ?? ""),
+    provider: row.provider === "s3" ? "s3" : "local",
+    createdAt: dateString(row.created_at) ?? new Date().toISOString(),
+  };
 }
 
 export async function trackEvent(record: TrackEventRecord): Promise<void> {
