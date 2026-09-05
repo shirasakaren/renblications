@@ -9,6 +9,7 @@ import { contentHref } from "@/components/publication-card";
 import { SafeMdx } from "@/components/safe-mdx";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { collectionForType, contentPath } from "@/lib/collections";
 import { getContentBySlug, getPublicConfig, getRecommendations } from "@/lib/db";
 
 function formatDate(value: string | null): string {
@@ -16,14 +17,16 @@ function formatDate(value: string | null): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(value));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const item = await getContentBySlug(slug);
-  if (!item || item.status !== "published") return {};
+export async function generateMetadata({ params }: { params: Promise<{ collection: string; slug: string }> }): Promise<Metadata> {
+  const { collection, slug } = await params;
+  const [item, config] = await Promise.all([getContentBySlug(slug), getPublicConfig()]);
+  if (!item || item.status !== "published" || collectionForType(item.type) !== collection) return {};
   return {
     title: item.seo.title || item.title,
     description: item.seo.description || item.excerpt,
-    alternates: item.seo.canonicalUrl ? { canonical: item.seo.canonicalUrl } : undefined,
+    authors: [{ name: config.profile.name }],
+    keywords: item.tags,
+    alternates: { canonical: item.seo.canonicalUrl || contentPath(item) },
     openGraph: {
       type: "article",
       title: item.seo.title || item.title,
@@ -32,15 +35,35 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       modifiedTime: item.updatedAt,
       images: item.coverUrl ? [item.coverUrl] : [],
     },
+    twitter: {
+      card: item.coverUrl ? "summary_large_image" : "summary",
+      title: item.seo.title || item.title,
+      description: item.seo.description || item.excerpt,
+      images: item.coverUrl ? [item.coverUrl] : [],
+    },
   };
 }
 
 export default async function ContentPage({ params }: { params: Promise<{ collection: string; slug: string }> }) {
-  const { slug } = await params;
+  const { collection, slug } = await params;
   const [config, item] = await Promise.all([getPublicConfig(), getContentBySlug(slug)]);
   if (!config.onboarded) redirect("/onboarding");
-  if (!item || item.status !== "published") notFound();
+  if (!item || item.status !== "published" || collectionForType(item.type) !== collection) notFound();
   const recommendations = await getRecommendations(item);
+  const siteOrigin = config.site.siteUrl || process.env.SITE_URL;
+  const canonicalUrl = item.seo.canonicalUrl || (siteOrigin ? new URL(contentPath(item), siteOrigin).toString() : undefined);
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": item.type === "paper" || item.type === "research" ? "ScholarlyArticle" : "Article",
+    headline: item.title,
+    description: item.seo.description || item.excerpt,
+    datePublished: item.publishedAt,
+    dateModified: item.updatedAt,
+    mainEntityOfPage: canonicalUrl,
+    author: { "@type": "Person", name: config.profile.name },
+    image: item.coverUrl || config.site.defaultOgImage || undefined,
+    keywords: item.tags.join(", "),
+  };
   return (
     <>
       <SiteHeader name={config.site.name} shortName={config.site.shortName} navigation={config.site.navigation} />
@@ -111,6 +134,10 @@ export default async function ContentPage({ params }: { params: Promise<{ collec
       </main>
       <SiteFooter name={config.site.name} note={config.site.footerNote} />
       {config.analytics.enabled ? <Analytics contentId={item.id} /> : null}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replaceAll("<", "\\u003c") }}
+      />
     </>
   );
 }

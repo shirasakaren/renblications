@@ -4,29 +4,18 @@ import { Analytics } from "@/components/analytics";
 import { PublicationCard } from "@/components/publication-card";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { COLLECTIONS } from "@/lib/collections";
 import { getPublicConfig, listContent } from "@/lib/db";
-import type { ContentKind } from "@/lib/types";
-
-const collections: Record<string, { type: ContentKind; title: string; description: string }> = {
-  articles: { type: "article", title: "Articles", description: "Structured writing on design, technology, systems, and culture." },
-  blogs: { type: "blog", title: "Blogs", description: "Shorter observations, project journals, and practical notes from ongoing work." },
-  papers: { type: "paper", title: "Papers", description: "Formal arguments, manuscripts, and downloadable research documents." },
-  publications: { type: "publication", title: "Publications", description: "Books, reports, collected editions, and longer published work." },
-  research: { type: "research", title: "Research", description: "Open questions, methods, evidence, and findings still taking shape." },
-  essays: { type: "essay", title: "Essays", description: "Long-form ideas developed through reflection and careful argument." },
-  notes: { type: "note", title: "Notes", description: "Compact observations intended to remain useful and easy to revisit." },
-  talks: { type: "talk", title: "Talks", description: "Recordings, transcripts, decks, and references from public conversations." },
-};
 
 export async function generateMetadata({ params }: { params: Promise<{ collection: string }> }): Promise<Metadata> {
   const { collection } = await params;
-  const entry = collections[collection];
+  const entry = COLLECTIONS[collection];
   return entry ? { title: entry.title, description: entry.description } : {};
 }
 
 export default async function CollectionPage({ params }: { params: Promise<{ collection: string }> }) {
   const { collection } = await params;
-  const entry = collections[collection];
+  const entry = COLLECTIONS[collection];
   if (!entry) notFound();
   const [config, content] = await Promise.all([
     getPublicConfig(),

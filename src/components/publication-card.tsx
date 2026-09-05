@@ -1,20 +1,10 @@
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { contentPath } from "@/lib/collections";
 import type { ContentItem } from "@/lib/types";
 
-const collectionByType: Record<ContentItem["type"], string> = {
-  article: "articles",
-  blog: "blogs",
-  paper: "papers",
-  publication: "publications",
-  research: "research",
-  essay: "essays",
-  note: "notes",
-  talk: "talks",
-};
-
 export function contentHref(item: ContentItem): string {
-  return `/${collectionByType[item.type]}/${item.slug}`;
+  return contentPath(item);
 }
 
 export function PublicationCard({ item }: { item: ContentItem }) {
