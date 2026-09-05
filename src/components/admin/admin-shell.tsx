@@ -132,7 +132,7 @@ export function AdminShell({
         <header className="admin-topbar">
           <button className="admin-menu-button" type="button" onClick={() => setOpen(true)} aria-label="Open navigation"><List size={19} /></button>
           <div className="admin-topbar-spacer" />
-          <ThemeToggle />
+          <ThemeToggle force />
           <Link className="button button-primary admin-create-button" href="/admin/editor/new">
             <NotePencil size={16} /> New piece
           </Link>

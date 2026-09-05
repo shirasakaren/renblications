@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <head>
         <meta name="theme-color" content={theme[initialMode].bg} />
       </head>
-      <body className={appearance.showGrain ? "grain" : ""}>
+      <body className={appearance.showGrain ? "grain" : ""} data-motion={appearance.motionLevel}>
         <ThemeProvider appearance={appearance}>{children}</ThemeProvider>
       </body>
     </html>

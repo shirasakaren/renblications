@@ -8,9 +8,11 @@ interface ThemeContextValue {
   themeId: string;
   mode: ThemeMode;
   resolved: "light" | "dark";
+  motionLevel: AppearanceSettings["motionLevel"];
+  allowVisitorMode: boolean;
   setThemeId: (id: string) => void;
   setMode: (mode: ThemeMode) => void;
-  preview: (id: string, mode: ThemeMode) => void;
+  preview: (id: string, mode: ThemeMode, motionLevel?: AppearanceSettings["motionLevel"]) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -54,6 +56,7 @@ export function ThemeProvider({
 }) {
   const [themeId, setThemeIdState] = useState(appearance.themeId);
   const [mode, setModeState] = useState<ThemeMode>(appearance.mode);
+  const [motionLevel, setMotionLevel] = useState(appearance.motionLevel);
   const [resolved, setResolved] = useState<"light" | "dark">(
     appearance.mode === "dark" ? "dark" : "light",
   );
@@ -67,7 +70,9 @@ export function ThemeProvider({
     /* eslint-disable react-hooks/set-state-in-effect */
     setThemeIdState(appearance.themeId);
     setModeState(initialMode);
+    setMotionLevel(appearance.motionLevel);
     setResolved(applyTheme(appearance.themeId, initialMode));
+    document.body.dataset.motion = appearance.motionLevel;
     /* eslint-enable react-hooks/set-state-in-effect */
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -95,15 +100,19 @@ export function ThemeProvider({
     [appearance.allowVisitorMode, themeId],
   );
 
-  const preview = useCallback((id: string, nextMode: ThemeMode) => {
+  const preview = useCallback((id: string, nextMode: ThemeMode, motionLevel?: AppearanceSettings["motionLevel"]) => {
     setThemeIdState(id);
     setModeState(nextMode);
     setResolved(applyTheme(id, nextMode));
+    if (motionLevel) {
+      setMotionLevel(motionLevel);
+      document.body.dataset.motion = motionLevel;
+    }
   }, []);
 
   const value = useMemo(
-    () => ({ themeId, mode, resolved, setThemeId, setMode, preview }),
-    [themeId, mode, resolved, setThemeId, setMode, preview],
+    () => ({ themeId, mode, resolved, motionLevel, allowVisitorMode: appearance.allowVisitorMode, setThemeId, setMode, preview }),
+    [themeId, mode, resolved, motionLevel, appearance.allowVisitorMode, setThemeId, setMode, preview],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

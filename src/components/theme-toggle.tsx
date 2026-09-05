@@ -4,12 +4,14 @@ import { Moon, Sun, SunHorizon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTheme } from "./theme-provider";
 
-export function ThemeToggle() {
-  const { mode, setMode } = useTheme();
+export function ThemeToggle({ force = false }: { force?: boolean }) {
+  const { mode, setMode, allowVisitorMode } = useTheme();
   const reduce = useReducedMotion();
   const next = mode === "system" ? "light" : mode === "light" ? "dark" : "system";
   const label = `Theme: ${mode}. Switch to ${next}.`;
   const Icon = mode === "dark" ? Moon : mode === "light" ? Sun : SunHorizon;
+
+  if (!allowVisitorMode && !force) return null;
 
   return (
     <motion.button

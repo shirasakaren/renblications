@@ -869,11 +869,18 @@
 }
 
 .media-file-button input,
-.editor-toolbar label input {
+.editor-toolbar label input,
+.profile-upload-button input {
   position: absolute;
   width: 1px;
   height: 1px;
   opacity: 0;
+}
+
+.profile-upload-button {
+  position: relative;
+  width: fit-content;
+  overflow: hidden;
 }
 
 .admin-inline-message {
