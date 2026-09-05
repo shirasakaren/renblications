@@ -80,12 +80,17 @@ router.use((_request, response, next) => {
 });
 
 function requestOrigin(request: Request): string {
-  const configured = process.env.SITE_URL?.replace(/\/$/, "");
-  if (configured) return configured;
   const forwardedHost = request.get("x-forwarded-host")?.split(",")[0]?.trim();
   const host = forwardedHost || request.get("host") || "localhost";
   const protocol = request.get("x-forwarded-proto")?.split(",")[0]?.trim() || request.protocol;
   return `${protocol}://${host}`;
+}
+
+function allowedRequestOrigins(request: Request): Set<string> {
+  const origins = new Set([requestOrigin(request)]);
+  const configured = process.env.SITE_URL?.replace(/\/$/, "");
+  if (configured) origins.add(configured);
+  return origins;
 }
 
 function requireSameOrigin(request: Request, response: Response, next: NextFunction): void {
@@ -95,7 +100,7 @@ function requireSameOrigin(request: Request, response: Response, next: NextFunct
     return;
   }
   const origin = request.get("origin");
-  if (origin && origin.replace(/\/$/, "") !== requestOrigin(request)) {
+  if (origin && !allowedRequestOrigins(request).has(origin.replace(/\/$/, ""))) {
     response.status(403).json({ error: "Request origin did not match this site." });
     return;
   }
