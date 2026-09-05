@@ -1,7 +1,12 @@
 import { notFound } from "next/navigation";
 import { ContentManager } from "@/components/admin/content-manager";
+import { AppearanceSettings } from "@/components/admin/appearance-settings";
+import { MediaLibrary } from "@/components/admin/media-library";
 import { PerformanceTable } from "@/components/admin/performance-table";
-import { getAdminOverview, listContent } from "@/lib/db";
+import { ProfileSettings } from "@/components/admin/profile-settings";
+import { SecuritySettings } from "@/components/admin/security-settings";
+import { SiteSettings } from "@/components/admin/site-settings";
+import { getAdminOverview, getPublicConfig, listContent, listMedia } from "@/lib/db";
 import type { ContentKind } from "@/lib/types";
 
 const contentSections: Record<string, { type?: ContentKind; title: string }> = {
@@ -32,6 +37,23 @@ export default async function AdminSectionPage({ params }: { params: Promise<{ s
         <section className="admin-section"><div className="admin-section-heading"><div><h2>Attention by content</h2><p>The score combines views, unique readers, active time, and scroll depth.</p></div></div><PerformanceTable items={overview.performance} /></section>
       </>
     );
+  }
+  if (section === "media") return <MediaLibrary initialMedia={await listMedia()} />;
+  if (section === "profile") {
+    const config = await getPublicConfig();
+    return <ProfileSettings initialProfile={config.profile} />;
+  }
+  if (section === "appearance") {
+    const config = await getPublicConfig();
+    return <AppearanceSettings initialAppearance={config.appearance} />;
+  }
+  if (section === "site") {
+    const [config, content] = await Promise.all([getPublicConfig(), listContent({ limit: 500 })]);
+    return <SiteSettings initialSite={config.site} content={content} />;
+  }
+  if (section === "settings") {
+    const config = await getPublicConfig();
+    return <SecuritySettings initialAnalytics={config.analytics} />;
   }
   notFound();
 }

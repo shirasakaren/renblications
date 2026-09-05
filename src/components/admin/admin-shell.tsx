@@ -15,6 +15,7 @@ import {
   NotePencil,
   PaintBrush,
   PenNib,
+  ShieldCheck,
   SignOut,
   SquaresFour,
   UserCircle,
@@ -54,6 +55,7 @@ const groups = [
       { label: "Profile", href: "/admin/profile", icon: UserCircle },
       { label: "Appearance", href: "/admin/appearance", icon: PaintBrush },
       { label: "Site settings", href: "/admin/site", icon: GearSix },
+      { label: "Security & data", href: "/admin/settings", icon: ShieldCheck },
     ],
   },
 ] as const;
