@@ -1,8 +1,10 @@
 import ReactMarkdown from "react-markdown";
+import type { ComponentProps } from "react";
 import rehypeHighlight from "rehype-highlight";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import { CodeBlock } from "./code-block";
 import { MediaBlock, type MediaKind } from "./media-block";
 
 interface MarkdownBlock {
@@ -25,6 +27,11 @@ interface CalloutBlock {
 }
 
 type Block = MarkdownBlock | EmbedBlock | CalloutBlock;
+
+function SecondLevelHeading({ node, ...props }: ComponentProps<"h1"> & { node?: unknown }) {
+  void node;
+  return <h2 {...props} />;
+}
 
 const customBlock = /:::callout(?:\s+title="([^"]*)")?\s*\n([\s\S]*?)\n:::|<(YouTube|Video|Audio|Document|Image|LinkPreview)\s+([^>]*?)\s*\/>/g;
 const attribute = /([a-zA-Z]+)="([^"]*)"/g;
@@ -69,16 +76,30 @@ function parseBlocks(source: string): Block[] {
 
 function Markdown({ source }: { source: string }) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
+    <ReactMarkdown
+      components={{
+        pre: CodeBlock,
+        h1: SecondLevelHeading,
+      }}
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex, rehypeHighlight]}
+    >
       {source}
     </ReactMarkdown>
   );
 }
 
-export function SafeMdx({ source }: { source: string }) {
+function withoutRepeatedTitle(source: string, title?: string): string {
+  if (!title) return source;
+  const firstHeading = source.match(/^#\s+(.+)\r?\n+/);
+  return firstHeading?.[1].trim() === title.trim() ? source.slice(firstHeading[0].length) : source;
+}
+
+export function SafeMdx({ source, title }: { source: string; title?: string }) {
+  const body = withoutRepeatedTitle(source, title);
   return (
     <div className="prose">
-      {parseBlocks(source).map((block, index) => {
+      {parseBlocks(body).map((block, index) => {
         if (block.type === "markdown") return <Markdown source={block.source} key={`markdown-${index}`} />;
         if (block.type === "callout") {
           return (

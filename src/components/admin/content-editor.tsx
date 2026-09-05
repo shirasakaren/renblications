@@ -33,8 +33,13 @@ const typeLabels: Record<ContentKind, string> = {
   talk: "Talk",
 };
 
-function toSlug(value: string): string {
-  return value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 96);
+function toPath(value: string): string {
+  return value
+    .split("/")
+    .map((segment) => segment.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""))
+    .filter(Boolean)
+    .join("/")
+    .slice(0, 96);
 }
 
 function blankDraft(type: ContentKind): ContentDraft {
@@ -173,14 +178,14 @@ export function ContentEditor({ initialItem, initialType, initialMedia }: { init
     <div className="editor-page">
       <div className="editor-header">
         <Link className="admin-icon-control" href="/admin/content" aria-label="Back to content"><ArrowLeft size={17} /></Link>
-        <div className="editor-heading"><input aria-label="Content title" value={draft.title} onChange={(event) => { const title = event.target.value; update("title", title); if (!slugTouched) update("slug", toSlug(title)); }} placeholder="Untitled publication" /><span>{message}</span></div>
+        <div className="editor-heading"><input aria-label="Content title" value={draft.title} onChange={(event) => { const title = event.target.value; update("title", title); if (!slugTouched) update("slug", toPath(title)); }} placeholder="Untitled publication" /><span>{message}</span></div>
         <select className="editor-status" value={draft.status} onChange={(event) => update("status", event.target.value as ContentDraft["status"])}><option value="draft">Draft</option><option value="published">Published</option><option value="scheduled">Scheduled</option><option value="archived">Archived</option></select>
         <button className="button button-primary" type="button" onClick={save} disabled={pending}><Check size={16} /> {pending ? "Working" : "Save"}</button>
       </div>
 
       <div className="editor-meta-grid">
         <label className="field"><span className="field-legend">Format</span><select className="select" value={draft.type} onChange={(event) => update("type", event.target.value as ContentKind)}>{Object.entries(typeLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
-        <label className="field"><span className="field-legend">Slug</span><input className="input" value={draft.slug} onChange={(event) => { setSlugTouched(true); update("slug", toSlug(event.target.value)); }} /></label>
+        <label className="field"><span className="field-legend">Public URL</span><span className="editor-url-field"><span aria-hidden="true">/</span><input className="input" aria-label="Public URL path" value={draft.slug} onChange={(event) => { setSlugTouched(true); update("slug", toPath(event.target.value)); }} placeholder="article1" /></span><small>Choose any short path, such as /article1 or /notes/field-test.</small></label>
         <label className="field"><span className="field-legend">Tags</span><input className="input" value={draft.tags.join(", ")} onChange={(event) => update("tags", event.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))} placeholder="design, systems, research" /></label>
         <label className="field"><span className="field-legend">Subtitle</span><input className="input" value={draft.subtitle} onChange={(event) => update("subtitle", event.target.value)} /></label>
         <label className="field field-wide"><span className="field-legend">Summary</span><textarea className="textarea editor-summary" value={draft.excerpt} onChange={(event) => update("excerpt", event.target.value)} /></label>

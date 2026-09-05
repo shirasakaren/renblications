@@ -1201,6 +1201,26 @@
   padding: 34px 0 24px;
 }
 
+.editor-url-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink-muted);
+}
+
+.editor-url-field > span {
+  padding-left: 12px;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+}
+
+.editor-url-field .input {
+  border: 0;
+  background: transparent;
+}
+
 .editor-meta-grid .field-wide {
   grid-column: span 2;
 }

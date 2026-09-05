@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAvailableContentPath } from "../lib/collections";
 import { CONTENT_KINDS } from "../lib/types";
 
 const safeUrl = z
@@ -34,7 +35,14 @@ export const loginSchema = z.object({
 
 export const contentSchema = z.object({
   id: z.string().uuid().optional(),
-  slug: z.string().trim().max(96).default(""),
+  slug: z
+    .string()
+    .trim()
+    .max(96)
+    .regex(/^\/?[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/, "Use lowercase URL segments separated by slashes.")
+    .or(z.literal(""))
+    .refine((value) => !value || isAvailableContentPath(value), "That URL is reserved by the publication site.")
+    .default(""),
   type: z.enum(CONTENT_KINDS),
   status: z.enum(["draft", "scheduled", "published", "archived"]),
   title: z.string().trim().min(1).max(180),

@@ -65,6 +65,16 @@ export function slugify(value: string): string {
     .slice(0, 96);
 }
 
+export function normalizeContentPath(value: string): string {
+  return value
+    .split("/")
+    .map((segment) => slugify(segment))
+    .filter(Boolean)
+    .join("/")
+    .slice(0, 96)
+    .replace(/\/$/, "");
+}
+
 export function estimateReadingMinutes(source: string): number {
   const words = source
     .replace(/<[^>]+>/g, " ")

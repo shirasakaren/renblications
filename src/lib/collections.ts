@@ -19,6 +19,16 @@ export function collectionForType(type: ContentKind): string {
   return collectionByType[type];
 }
 
-export function contentPath(item: Pick<ContentItem, "type" | "slug">): string {
-  return `/${collectionForType(item.type)}/${item.slug}`;
+const blockedPrefixes = new Set(["admin", "api", "onboarding", "_next"]);
+const blockedFiles = new Set(["feed.xml", "sitemap.xml", "robots.txt", "manifest.webmanifest", "icon.svg", "favicon.ico"]);
+
+export function isAvailableContentPath(value: string): boolean {
+  const path = value.replace(/^\/+|\/+$/g, "");
+  const segments = path.split("/");
+  if (!path || blockedPrefixes.has(segments[0]) || blockedFiles.has(path)) return false;
+  return segments.length > 1 || !COLLECTIONS[path];
+}
+
+export function contentPath(item: Pick<ContentItem, "slug">): string {
+  return `/${item.slug}`;
 }

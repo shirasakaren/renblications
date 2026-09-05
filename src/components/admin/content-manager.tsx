@@ -4,6 +4,7 @@ import { ArrowUpRight, Books, MagnifyingGlass, NotePencil, Trash } from "@phosph
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { contentPath } from "@/lib/collections";
 import type { ContentItem, ContentKind } from "@/lib/types";
 
 export function ContentManager({ items, type, title }: { items: ContentItem[]; type?: ContentKind; title: string }) {
@@ -42,7 +43,7 @@ export function ContentManager({ items, type, title }: { items: ContentItem[]; t
           <article className="content-list-row" key={item.id}>
             <div className="content-type-mark">{item.type.slice(0, 2).toUpperCase()}</div>
             <div className="content-list-copy"><div className="content-list-meta"><span data-status={item.status}>{item.status}</span><span>{item.type}</span><span>{new Date(item.updatedAt).toLocaleDateString()}</span></div><h2><Link href={`/admin/editor/${item.id}`}>{item.title}</Link></h2><p>{item.excerpt || "No summary yet."}</p></div>
-            <div className="content-list-actions"><Link className="admin-icon-control" href={`/admin/editor/${item.id}`} aria-label={`Edit ${item.title}`}><NotePencil size={17} /></Link>{item.status === "published" ? <Link className="admin-icon-control" href={`/${item.type === "research" ? "research" : `${item.type}s`}/${item.slug}`} target="_blank" aria-label={`View ${item.title}`}><ArrowUpRight size={17} /></Link> : null}<button className="admin-icon-control danger" type="button" onClick={() => remove(item)} aria-label={`Delete ${item.title}`}><Trash size={17} /></button></div>
+            <div className="content-list-actions"><Link className="admin-icon-control" href={`/admin/editor/${item.id}`} aria-label={`Edit ${item.title}`}><NotePencil size={17} /></Link>{item.status === "published" ? <Link className="admin-icon-control" href={contentPath(item)} target="_blank" aria-label={`View ${item.title}`}><ArrowUpRight size={17} /></Link> : null}<button className="admin-icon-control danger" type="button" onClick={() => remove(item)} aria-label={`Delete ${item.title}`}><Trash size={17} /></button></div>
           </article>
         ))}
         {!filtered.length ? <div className="admin-empty"><Books size={28} /><h2>No matching content</h2><p>Clear the filters or start a new piece in this format.</p></div> : null}

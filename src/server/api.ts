@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import multer from "multer";
 import { randomUUID } from "node:crypto";
 import {
+  ContentPathConflictError,
   completeOnboarding,
   createSession,
   deleteContent,
@@ -191,9 +192,11 @@ router.get("/public/content", async (request, response, next) => {
   }
 });
 
-router.get("/public/content/:slug", async (request, response, next) => {
+router.get("/public/content/*path", async (request, response, next) => {
   try {
-    const item = await getContentBySlug(request.params.slug);
+    const rawPath = request.params.path as string | string[];
+    const contentPath = Array.isArray(rawPath) ? rawPath.join("/") : rawPath;
+    const item = await getContentBySlug(contentPath);
     if (!item || item.status !== "published") {
       response.status(404).json({ error: "Publication not found." });
       return;
@@ -242,7 +245,12 @@ router.post("/analytics/track", async (request, response, next) => {
       region: request.get("x-vercel-ip-country-region") || "",
     };
     response.status(202).json({ accepted: true });
-    void trackEvent({ input: { ...input, properties }, visitorHash, userAgent }).catch(console.error);
+    void trackEvent({
+      input: { ...input, properties },
+      visitorHash,
+      userAgent,
+      retentionDays: config.analytics.retentionDays,
+    }).catch(console.error);
   } catch (error) {
     next(error);
   }
@@ -512,8 +520,13 @@ router.use((error: unknown, _request: Request, response: Response, _next: NextFu
     response.status(error.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: error.message });
     return;
   }
+  if (error instanceof ContentPathConflictError) {
+    response.status(409).json({ error: error.message });
+    return;
+  }
   if (error && typeof error === "object" && "issues" in error) {
-    response.status(400).json({ error: "Check the highlighted fields.", details: error });
+    const issues = (error as { issues?: Array<{ message?: string }> }).issues;
+    response.status(400).json({ error: issues?.[0]?.message || "Check the highlighted fields." });
     return;
   }
   console.error(error);

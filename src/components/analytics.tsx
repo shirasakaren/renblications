@@ -63,6 +63,7 @@ export function Analytics({ contentId }: { contentId?: string }) {
     let activeMs = 0;
     let maxDepth = 0;
     const thresholds = new Set<number>();
+    const playedMedia = new WeakSet<HTMLMediaElement>();
 
     const commitActive = () => {
       if (activeStarted) activeMs += Date.now() - activeStarted;
@@ -97,8 +98,47 @@ export function Analytics({ contentId }: { contentId?: string }) {
       }
     };
 
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      const copyButton = event.target.closest<HTMLElement>("[data-copy-code]");
+      if (copyButton) {
+        send({ ...base, event: "copy_code", properties: {} });
+        return;
+      }
+      const link = event.target.closest<HTMLAnchorElement>("a[href]");
+      if (!link) return;
+      if (link.matches(".recommendation-card")) {
+        send({ ...base, event: "recommendation_click", properties: { destination: link.pathname } });
+        return;
+      }
+      const destination = new URL(link.href, window.location.href);
+      if (destination.origin !== window.location.origin) {
+        send({
+          ...base,
+          event: "outbound_click",
+          properties: { destinationHost: destination.hostname, destinationPath: destination.pathname },
+        });
+      }
+    };
+
+    const onMediaPlay = (event: Event) => {
+      if (!(event.target instanceof HTMLMediaElement) || playedMedia.has(event.target)) return;
+      playedMedia.add(event.target);
+      const source = new URL(event.target.currentSrc || event.target.src, window.location.href);
+      send({ ...base, event: "media_play", properties: { mediaType: event.target.tagName.toLowerCase(), sourceHost: source.hostname } });
+    };
+
+    const onMediaComplete = (event: Event) => {
+      if (!(event.target instanceof HTMLMediaElement)) return;
+      const source = new URL(event.target.currentSrc || event.target.src, window.location.href);
+      send({ ...base, event: "media_complete", properties: { mediaType: event.target.tagName.toLowerCase(), sourceHost: source.hostname } });
+    };
+
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("click", onClick);
+    document.addEventListener("play", onMediaPlay, true);
+    document.addEventListener("ended", onMediaComplete, true);
     window.addEventListener("pagehide", flush);
     const interval = window.setInterval(flush, 30_000);
     onScroll();
@@ -106,6 +146,9 @@ export function Analytics({ contentId }: { contentId?: string }) {
       flush();
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("scroll", onScroll);
+      document.removeEventListener("click", onClick);
+      document.removeEventListener("play", onMediaPlay, true);
+      document.removeEventListener("ended", onMediaComplete, true);
       window.removeEventListener("pagehide", flush);
       window.clearInterval(interval);
     };

@@ -24,7 +24,7 @@ import type {
   PublicConfig,
   SiteSettings,
 } from "./types";
-import { estimateReadingMinutes, slugify } from "./security";
+import { estimateReadingMinutes, normalizeContentPath, slugify } from "./security";
 
 interface StoredSession {
   tokenHash: string;
@@ -63,6 +63,14 @@ interface TrackEventRecord {
   input: AnalyticsEventInput;
   visitorHash: string;
   userAgent: string;
+  retentionDays: number;
+}
+
+export class ContentPathConflictError extends Error {
+  constructor() {
+    super("Another publication already uses that public URL.");
+    this.name = "ContentPathConflictError";
+  }
 }
 
 const localPath = path.join(process.cwd(), "data", "local-store.json");
@@ -70,6 +78,7 @@ let localCache: LocalState | null = null;
 let localWriteQueue = Promise.resolve();
 let pool: Pool | null = null;
 let schemaPromise: Promise<void> | null = null;
+let lastAnalyticsPruneAt = 0;
 
 function freshLocalState(): LocalState {
   return {
@@ -445,7 +454,7 @@ function normalizeDraft(draft: ContentDraft): ContentItem {
   return {
     ...draft,
     id: draft.id ?? randomUUID(),
-    slug: slugify(draft.slug || draft.title),
+    slug: normalizeContentPath(draft.slug) || slugify(draft.title),
     title: draft.title.trim(),
     subtitle: draft.subtitle.trim(),
     excerpt: draft.excerpt.trim(),
@@ -505,6 +514,9 @@ export async function saveContent(draft: ContentDraft): Promise<ContentItem> {
   const item = normalizeDraft(draft);
   if (!usesPostgres()) {
     return mutateLocal((state) => {
+      if (state.content.some((candidate) => candidate.slug === item.slug && candidate.id !== item.id)) {
+        throw new ContentPathConflictError();
+      }
       const index = state.content.findIndex((candidate) => candidate.id === item.id);
       if (index >= 0) {
         item.createdAt = state.content[index].createdAt;
@@ -519,6 +531,11 @@ export async function saveContent(draft: ContentDraft): Promise<ContentItem> {
     const current = await getContentById(draft.id);
     if (current) item.createdAt = current.createdAt;
   }
+  const conflict = await getPool().query(
+    "SELECT 1 FROM publication_content WHERE slug = $1 AND id <> $2 LIMIT 1",
+    [item.slug, item.id],
+  );
+  if (conflict.rowCount) throw new ContentPathConflictError();
   await upsertContentPg(getPool(), item);
   return item;
 }
@@ -690,13 +707,17 @@ export async function trackEvent(record: TrackEventRecord): Promise<void> {
     createdAt: new Date().toISOString(),
   };
   if (!usesPostgres()) {
+    const cutoff = Date.now() - record.retentionDays * 86_400_000;
     await mutateLocal((state) => {
       state.events.unshift(event);
-      state.events = state.events.slice(0, 20_000);
+      state.events = state.events
+        .filter((candidate) => Date.parse(candidate.createdAt) >= cutoff)
+        .slice(0, 20_000);
     });
     return;
   }
-  await getPool().query(
+  const database = getPool();
+  await database.query(
     `INSERT INTO publication_events (
       id, event, content_id, path, referrer, session_id, visitor_hash,
       user_agent, properties, created_at
@@ -714,6 +735,13 @@ export async function trackEvent(record: TrackEventRecord): Promise<void> {
       event.createdAt,
     ],
   );
+  if (Date.now() - lastAnalyticsPruneAt > 3_600_000) {
+    lastAnalyticsPruneAt = Date.now();
+    await database.query(
+      "DELETE FROM publication_events WHERE created_at < now() - ($1 * interval '1 day')",
+      [record.retentionDays],
+    );
+  }
 }
 
 function buildLocalOverview(state: LocalState): AdminOverview {

@@ -810,9 +810,14 @@ button {
   line-height: 1.55;
 }
 
-.prose pre {
-  overflow-x: auto;
+.code-frame {
+  position: relative;
   margin: 2em 0;
+}
+
+.prose .code-frame pre {
+  overflow-x: auto;
+  margin: 0;
   padding: 22px;
   border-radius: var(--radius-card);
   background: #17191c;
@@ -820,6 +825,23 @@ button {
   font-family: var(--font-mono), monospace;
   font-size: 13px;
   line-height: 1.7;
+}
+
+.code-copy {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid #3f4348;
+  border-radius: 7px;
+  background: #23262a;
+  color: #d9dce0;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
 }
 
 .prose :not(pre) > code {
